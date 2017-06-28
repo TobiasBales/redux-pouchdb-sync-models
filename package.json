@@ -2,11 +2,26 @@
   "name": "redux-pouchdb-sync-models",
   "version": "0.1.0",
   "description": "A middleware to sync models between redux state and a pouchdb with efficient storage and conflict resolution",
-  "main": "index.js",
   "author": "Tobias Bales <tobias.bales@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/TobiasBales/redux-pouchdb-sync-models.git"
+  },
+  "scripts": {
+    "clean": "rm index.d.ts; rm index.js; rm index.js.map",
+    "build": "yarn run clean; tsc -p .",
+    "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'"
+  },
+  "main": "src/index.js",
+  "devDependencies": {
+    "@types/pouchdb": "^6.1.1",
+    "pouchdb": "^6.2.0",
+    "redux": "3.6.0",
+    "redux-thunk": "2.2.0",
+    "tslint": "^5.4.3",
+    "tslint-microsoft-contrib": "^5.0.0",
+    "tsutils": "1.6.0",
+    "typescript": "2.3.4"
   }
 }
