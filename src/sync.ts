@@ -93,12 +93,14 @@ const fetchDocuments = (
     });
 };
 
+export type ChangeCallback = (
+  arg: PouchDB.Replication.SyncResult<MaybeModel>
+) => void;
+
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
-  registerChangeCallback?: (
-    callback: (arg: PouchDB.Replication.SyncResult<MaybeModel>) => void
-  ) => () => void,
+  registerChangeCallback?: (callback: ChangeCallback) => () => void,
   modelsToSync?: string[],
   name?: string
 ): Middleware {
