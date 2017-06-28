@@ -58,6 +58,41 @@ const changeCallback = (
   });
 };
 
+const fetchDocuments = (
+  db: PouchDB.Database<MaybeModel>,
+  api: MiddlewareAPI<{}>,
+  knownIDs: IDStorage,
+  modelsToSync?: string[]
+) => {
+  db
+    .allDocs({ include_docs: true })
+    .then(response => {
+      const docs = response.rows.map(row => row.doc);
+      const models: ModelStorage = {};
+
+      docs.forEach(doc => {
+        if (!isModelToSync(doc, modelsToSync)) {
+          return;
+        }
+
+        if (models[doc.kind] !== undefined) {
+          models[doc.kind] = [];
+        }
+
+        models[doc.kind].push(doc);
+        knownIDs[doc._id] = doc.kind;
+      });
+
+      Object.keys(models).forEach(kind => {
+        api.dispatch(loadModels(models[kind], kind));
+      });
+      api.dispatch(initialized(name));
+    })
+    .catch(error => {
+      api.dispatch(modelError(error as Error, OPERATION_FETCH_DOCS));
+    });
+};
+
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
@@ -75,33 +110,7 @@ export function sync<State>(
         registerChangeCallback(changeCallback(api, knownIDs, modelsToSync));
       }
 
-      db
-        .allDocs({ include_docs: true })
-        .then(response => {
-          const docs = response.rows.map(row => row.doc);
-          const models: ModelStorage = {};
-
-          docs.forEach(doc => {
-            if (!isModelToSync(doc, modelsToSync)) {
-              return;
-            }
-
-            if (models[doc.kind] !== undefined) {
-              models[doc.kind] = [];
-            }
-
-            models[doc.kind].push(doc);
-            knownIDs[doc._id] = doc.kind;
-          });
-
-          Object.keys(models).forEach(kind => {
-            api.dispatch(loadModels(models[kind], kind));
-          });
-          api.dispatch(initialized(name));
-        })
-        .catch(error => {
-          api.dispatch(modelError(error as Error, OPERATION_FETCH_DOCS));
-        });
+      fetchDocuments(db, api, knownIDs, modelsToSync);
 
       return (action: Action | ThunkAction<{}, State, {}> | Action) => {
         if (isFromSync(action)) {
