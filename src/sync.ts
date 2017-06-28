@@ -48,28 +48,22 @@ export function sync<State>(
           }
 
           result.change.docs.forEach(doc => {
+            if (!isModelToSync(doc, modelsToSync)) {
+              return;
+            }
+
             if (isDeletedDoc(doc) && knownIDs[doc._id] !== undefined) {
-              api.dispatch(
-                removeModel(
-                  { _id: doc._id, _rev: doc._rev },
-                  knownIDs[doc._id],
-                  true
-                )
-              );
+              api.dispatch(removeModel(doc, knownIDs[doc._id], true));
               delete knownIDs[doc._id];
 
               return;
             }
 
-            if (!isModelToSync(doc, modelsToSync)) {
-              return;
-            }
-
-            if (knownIDs[doc._id] !== undefined) {
-              api.dispatch(updateModel(doc, true));
-            } else {
+            if (knownIDs[doc._id] === undefined) {
               api.dispatch(insertModel(doc, true));
               knownIDs[doc._id] = doc.kind;
+            } else {
+              api.dispatch(updateModel(doc, true));
             }
           });
         });
