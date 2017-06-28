@@ -163,11 +163,15 @@ const removeDocument = (
   action: RemoveModel,
   next: Dispatch<{}>
 ) => {
-  db.remove(action.payload).catch(error => {
-    api.dispatch(modelError(error as Error, OPERATION_REMOVE));
-  });
-  delete knownIDs[action.payload._id];
-  next(action);
+  db
+    .remove(action.payload)
+    .then(() => {
+      delete knownIDs[action.payload._id];
+      next(action);
+    })
+    .catch(error => {
+      api.dispatch(modelError(error as Error, OPERATION_REMOVE));
+    });
 };
 
 // tslint:disable max-func-body-length
