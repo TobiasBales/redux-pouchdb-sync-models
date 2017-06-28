@@ -37,6 +37,7 @@
     "no-reserved-keywords": false,
     "no-angle-bracket-type-assertion": true,
     "prefer-type-cast": false,
+    "no-relative-imports": false,
     "member-ordering": [
       true,
       "public-before-private",
