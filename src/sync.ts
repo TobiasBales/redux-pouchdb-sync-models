@@ -28,11 +28,41 @@ import {
 type ModelStorage = { [k: string]: SyncModel[] };
 type IDStorage = { [k: string]: string };
 
+const changeCallback = (
+  api: MiddlewareAPI<{}>,
+  knownIDs: IDStorage,
+  modelsToSync?: string[]
+) => (result: PouchDB.Replication.SyncResult<MaybeModel>) => {
+  if (result.direction === 'push') {
+    return;
+  }
+
+  result.change.docs.forEach(doc => {
+    if (!isModelToSync(doc, modelsToSync)) {
+      return;
+    }
+
+    if (isDeletedDoc(doc) && knownIDs[doc._id] !== undefined) {
+      api.dispatch(removeModel(doc, knownIDs[doc._id], true));
+      delete knownIDs[doc._id];
+
+      return;
+    }
+
+    if (knownIDs[doc._id] === undefined) {
+      api.dispatch(insertModel(doc, true));
+      knownIDs[doc._id] = doc.kind;
+    } else {
+      api.dispatch(updateModel(doc, true));
+    }
+  });
+};
+
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
   registerChangeCallback?: (
-    callback: (arg: PouchDB.Replication.SyncResult<{}>) => void
+    callback: (arg: PouchDB.Replication.SyncResult<MaybeModel>) => void
   ) => () => void,
   modelsToSync?: string[],
   name?: string
@@ -42,31 +72,7 @@ export function sync<State>(
   return (api: MiddlewareAPI<State>) => {
     return (next: Dispatch<State>) => {
       if (registerChangeCallback !== undefined) {
-        registerChangeCallback(result => {
-          if (result.direction === 'push') {
-            return;
-          }
-
-          result.change.docs.forEach(doc => {
-            if (!isModelToSync(doc, modelsToSync)) {
-              return;
-            }
-
-            if (isDeletedDoc(doc) && knownIDs[doc._id] !== undefined) {
-              api.dispatch(removeModel(doc, knownIDs[doc._id], true));
-              delete knownIDs[doc._id];
-
-              return;
-            }
-
-            if (knownIDs[doc._id] === undefined) {
-              api.dispatch(insertModel(doc, true));
-              knownIDs[doc._id] = doc.kind;
-            } else {
-              api.dispatch(updateModel(doc, true));
-            }
-          });
-        });
+        registerChangeCallback(changeCallback(api, knownIDs, modelsToSync));
       }
 
       db
