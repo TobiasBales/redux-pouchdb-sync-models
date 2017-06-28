@@ -189,7 +189,7 @@ export function isInsertAction(
 
 export function isUpdateAction(
   action: {} | Function
-): action is InsertModel<SyncModel> {
+): action is UpdateModel<SyncModel> {
   return isAction(action) && action.type === UPDATE_MODEL;
 }
 

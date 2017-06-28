@@ -1,9 +1,11 @@
 import { Action, Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { ThunkAction } from 'redux-thunk';
+import { RemoveModel, UpdateModel } from './actions';
 
 import {
   hasMeta,
   initialized,
+  InsertModel,
   insertModel,
   isAction,
   isDeletedDoc,
@@ -97,6 +99,77 @@ export type ChangeCallback = (
   arg: PouchDB.Replication.SyncResult<MaybeModel>
 ) => void;
 
+const insertDocument = (
+  db: PouchDB.Database<MaybeModel>,
+  api: MiddlewareAPI<{}>,
+  knownIDs: IDStorage,
+  action: InsertModel<SyncModel>,
+  next: Dispatch<{}>
+) => {
+  db
+    .put(
+      action.payload.toJSON !== undefined
+        ? action.payload.toJSON()
+        : action.payload
+    )
+    .then(async () => {
+      return db.get(action.payload._id).then(doc => {
+        if (!isModel(doc)) {
+          return;
+        }
+        action.payload = doc;
+        next(action);
+      });
+    })
+    .catch(error => {
+      api.dispatch(modelError(error as Error, OPERATION_INSERT));
+    });
+
+  knownIDs[action.payload._id] = action.payload.kind;
+};
+
+const updateDocument = (
+  db: PouchDB.Database<MaybeModel>,
+  api: MiddlewareAPI<{}>,
+  knownIDs: IDStorage,
+  action: UpdateModel<SyncModel>,
+  next: Dispatch<{}>
+) => {
+  db
+    .put(
+      action.payload.toJSON !== undefined
+        ? action.payload.toJSON()
+        : action.payload
+    )
+    .then(async () => {
+      return db.get(action.payload._id).then(doc => {
+        if (!isModel(doc)) {
+          return;
+        }
+        action.payload = doc;
+        next(action);
+      });
+    })
+    .catch(error => {
+      api.dispatch(modelError(error as Error, OPERATION_UPDATE));
+    });
+  knownIDs[action.payload._id] = action.payload.kind;
+};
+
+const removeDocument = (
+  db: PouchDB.Database<MaybeModel>,
+  api: MiddlewareAPI<{}>,
+  knownIDs: IDStorage,
+  action: RemoveModel,
+  next: Dispatch<{}>
+) => {
+  db.remove(action.payload).catch(error => {
+    api.dispatch(modelError(error as Error, OPERATION_REMOVE));
+  });
+  delete knownIDs[action.payload._id];
+  next(action);
+};
+
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
@@ -137,52 +210,11 @@ export function sync<State>(
         }
 
         if (isInsertAction(action)) {
-          db
-            .put(
-              action.payload.toJSON !== undefined
-                ? action.payload.toJSON()
-                : action.payload
-            )
-            .then(async () => {
-              return db.get(action.payload._id).then(doc => {
-                if (!isModel(doc)) {
-                  return;
-                }
-                action.payload = doc;
-                next(action);
-              });
-            })
-            .catch(error => {
-              api.dispatch(modelError(error as Error, OPERATION_INSERT));
-            });
-
-          knownIDs[action.payload._id] = action.payload.kind;
+          insertDocument(db, api, knownIDs, action, next);
         } else if (isUpdateAction(action)) {
-          db
-            .put(
-              action.payload.toJSON !== undefined
-                ? action.payload.toJSON()
-                : action.payload
-            )
-            .then(async () => {
-              return db.get(action.payload._id).then(doc => {
-                if (!isModel(doc)) {
-                  return;
-                }
-                action.payload = doc;
-                next(action);
-              });
-            })
-            .catch(error => {
-              api.dispatch(modelError(error as Error, OPERATION_UPDATE));
-            });
-          knownIDs[action.payload._id] = action.payload.kind;
+          updateDocument(db, api, knownIDs, action, next);
         } else if (isRemoveAction(action)) {
-          db.remove(action.payload).catch(error => {
-            api.dispatch(modelError(error as Error, OPERATION_REMOVE));
-          });
-          delete knownIDs[action.payload._id];
-          next(action);
+          removeDocument(db, api, knownIDs, action, next);
         } else {
           // tslint:disable-next-line no-any
           next((action as any) as ThunkAction<{}, State, {}>);
