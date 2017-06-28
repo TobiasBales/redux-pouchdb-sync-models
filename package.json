@@ -1,0 +1,12 @@
+{
+  "name": "redux-pouchdb-sync-models",
+  "version": "0.1.0",
+  "description": "A middleware to sync models between redux state and a pouchdb with efficient storage and conflict resolution",
+  "main": "index.js",
+  "author": "Tobias Bales <tobias.bales@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TobiasBales/redux-pouchdb-sync-models.git"
+  }
+}
