@@ -11,14 +11,29 @@
   "scripts": {
     "clean": "rm index.d.ts; rm index.js; rm index.js.map",
     "build": "yarn run clean; tsc -p .",
-    "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'"
+    "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'",
+    "test": "jest"
+  },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
   },
   "main": "src/index.js",
   "devDependencies": {
+    "@types/jest": "^20.0.2",
     "@types/pouchdb": "^6.1.1",
+    "jest": "^20.0.4",
     "pouchdb": "^6.2.0",
     "redux": "3.6.0",
     "redux-thunk": "2.2.0",
+    "ts-jest": "^20.0.6",
     "tslint": "^5.4.3",
     "tslint-microsoft-contrib": "^5.0.0",
     "tsutils": "1.6.0",
