@@ -114,7 +114,7 @@ export function sync<State>(
 
       fetchDocuments(db, api, knownIDs, modelsToSync);
 
-      return (action: Action | ThunkAction<{}, State, {}> | Action) => {
+      return (action: Action | ThunkAction<{}, State, {}>) => {
         if (isFromSync(action)) {
           next(action as ThunkAction<{}, State, {}>);
 
