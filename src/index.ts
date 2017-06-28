@@ -185,13 +185,16 @@ type ActionWithFromSyncMeta = {
   };
 };
 
-type InsertOrUpdate = InsertModel<SyncModel> | UpdateModel<SyncModel>;
+function isInsertAction(
+  action: {} | Function
+): action is InsertModel<SyncModel> {
+  return isAction(action) && action.type === INSERT_MODEL;
+}
 
-function isInsertOrUpdateAction(
-  action: {} | Function,
-  type: string
-): action is InsertOrUpdate {
-  return isAction(action) && action.type === type;
+function isUpdateAction(
+  action: {} | Function
+): action is InsertModel<SyncModel> {
+  return isAction(action) && action.type === UPDATE_MODEL;
 }
 
 function isRemoveAction(action: {} | Function): action is RemoveModel {
@@ -321,7 +324,7 @@ export function sync<State>(
           return;
         }
 
-        if (isInsertOrUpdateAction(action, INSERT_MODEL)) {
+        if (isInsertAction(action)) {
           db
             .put(
               action.payload.toJSON !== undefined
@@ -342,7 +345,7 @@ export function sync<State>(
             });
 
           knownIDs[action.payload._id] = action.payload.kind;
-        } else if (isInsertOrUpdateAction(action, UPDATE_MODEL)) {
+        } else if (isUpdateAction(action)) {
           db
             .put(
               action.payload.toJSON !== undefined
