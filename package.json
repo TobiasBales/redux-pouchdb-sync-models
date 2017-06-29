@@ -9,7 +9,7 @@
     "url": "https://github.com/TobiasBales/redux-pouchdb-sync-models.git"
   },
   "scripts": {
-    "clean": "rm index.d.ts; rm index.js; rm index.js.map",
+    "clean": "rm -f index.d.ts; rm -f index.js; rm -f index.js.map",
     "build": "yarn run clean; tsc -p .",
     "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'",
     "test": "jest",
