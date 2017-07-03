@@ -9,25 +9,28 @@ PouchDB.plugin(PouchDBAdapterMemory);
 const kind = 'kind';
 
 let db: PouchDB.Database;
+let remoteDb: PouchDB.Database;
 let store: MockStore<{}>;
 let models: { kind: string; _id: string; value: number }[];
 
-beforeEach(done => {
+beforeEach(async done => {
   models = [
     { kind: kind, _id: '1234', value: 1234 },
     { kind: kind, _id: '2345', value: 2345 },
     { kind: kind, _id: '3456', value: 3456 },
   ];
   db = new PouchDB('test', { adapter: 'memory' });
+  remoteDb = new PouchDB('test-remote', { adapter: 'memory' });
 
-  db.bulkDocs(models).then(() => {
-    const middlewares = [sync.sync(db, undefined, [kind], 'test', done)];
-    store = reduxMockStore(middlewares)();
-  });
+  await db.bulkDocs(models);
+
+  const middlewares = [sync.sync(db, undefined, [kind], 'test', done)];
+  store = reduxMockStore(middlewares)();
 });
 
-afterEach(done => {
-  db.destroy().then(done);
+afterEach(async () => {
+  await db.destroy();
+  await remoteDb.destroy();
 });
 
 describe('initialization', () => {
