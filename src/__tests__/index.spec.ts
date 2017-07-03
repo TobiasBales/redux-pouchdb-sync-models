@@ -1,6 +1,6 @@
 import * as PouchDB from 'pouchdb';
 import * as PouchDBAdapterMemory from 'pouchdb-adapter-memory';
-import reduxMockStore, { MockStore } from 'redux-mock-store';
+import createMockStore, { MockStore } from 'redux-mock-store';
 
 import * as sync from '../index';
 
@@ -12,6 +12,10 @@ let db: PouchDB.Database;
 let remoteDb: PouchDB.Database;
 let store: MockStore<{}>;
 let models: { kind: string; _id: string; value: number }[];
+
+function justFail(err: Error) {
+  fail('Unexpected promise rejection');
+}
 
 beforeEach(async done => {
   models = [
@@ -26,7 +30,7 @@ beforeEach(async done => {
   await db.bulkDocs(models);
 
   const middlewares = [sync.sync(db, replication, [kind], 'test', done)];
-  store = reduxMockStore(middlewares)();
+  store = createMockStore(middlewares)();
 });
 
 afterEach(async () => {
@@ -61,24 +65,33 @@ describe('inserting', () => {
     store.clearActions();
     store.dispatch(sync.insertModel(model));
 
-    db.get('0123').then(doc => {
-      expect(doc).toMatchObject(model);
-      expect(store.getActions().length).toBe(0);
-      done();
-    });
+    db
+      .get('0123')
+      .then(doc => {
+        expect(doc).toMatchObject(model);
+        expect(store.getActions().length).toBe(0);
+        done();
+      })
+      .catch(justFail);
   });
 
   it('should handle duplicate an insert action', done => {
     const model = { kind: kind, _id: '0123', value: 123 };
     store.dispatch(sync.insertModel(model));
 
-    db.get('0123').then(doc1 => {
-      store.dispatch(sync.insertModel({ ...model, ...doc1, value: 234 }));
-      db.get('0123').then(doc2 => {
-        expect(doc2).toMatchObject({ ...model, value: 234 });
-        done();
-      });
-    });
+    db
+      .get('0123')
+      .then(doc1 => {
+        store.dispatch(sync.insertModel({ ...model, ...doc1, value: 234 }));
+        db
+          .get('0123')
+          .then(doc2 => {
+            expect(doc2).toMatchObject({ ...model, value: 234 });
+            done();
+          })
+          .catch(justFail);
+      })
+      .catch(justFail);
   });
 });
 
@@ -87,13 +100,19 @@ describe('updating', () => {
     const model = { kind: kind, _id: '0123', value: 123 };
     store.dispatch(sync.insertModel(model));
 
-    db.get('0123').then(doc1 => {
-      store.dispatch(sync.updateModel({ ...model, ...doc1, value: 234 }));
-      db.get('0123').then(doc2 => {
-        expect(doc2).toMatchObject({ ...model, value: 234 });
-        done();
-      });
-    });
+    db
+      .get('0123')
+      .then(doc1 => {
+        store.dispatch(sync.updateModel({ ...model, ...doc1, value: 234 }));
+        db
+          .get('0123')
+          .then(doc2 => {
+            expect(doc2).toMatchObject({ ...model, value: 234 });
+            done();
+          })
+          .catch(justFail);
+      })
+      .catch(justFail);
   });
 
   it('should handle an update action without a previous insert', done => {
@@ -101,11 +120,14 @@ describe('updating', () => {
     store.clearActions();
     store.dispatch(sync.updateModel(model));
 
-    db.get('0123').then(doc => {
-      expect(doc).toMatchObject(model);
-      expect(store.getActions().length).toBe(0);
-      done();
-    });
+    db
+      .get('0123')
+      .then(doc => {
+        expect(doc).toMatchObject(model);
+        expect(store.getActions().length).toBe(0);
+        done();
+      })
+      .catch(justFail);
   });
 });
 
@@ -114,26 +136,29 @@ describe('removing', () => {
     const model = { kind: kind, _id: '0123', value: 123 };
     store.dispatch(sync.insertModel(model));
 
-    db.get('0123', { revs: true }).then(doc1 => {
-      store.dispatch(
-        sync.removeModel({ _id: doc1._id, _rev: doc1._rev || '' }, kind)
-      );
-      db
-        .get('0123')
-        .then(doc2 => {
-          fail('Should not be able to retrieve a removed model');
-        })
-        .catch(err => {
-          expect(err).toMatchObject({
-            status: 404,
-            name: 'not_found',
-            message: 'missing',
-            error: true,
-            reason: 'deleted',
+    db
+      .get('0123', { revs: true })
+      .then(doc1 => {
+        store.dispatch(
+          sync.removeModel({ _id: doc1._id, _rev: doc1._rev as string }, kind)
+        );
+        db
+          .get('0123')
+          .then(doc2 => {
+            fail('Should not be able to retrieve a removed model');
+          })
+          .catch(err => {
+            expect(err).toMatchObject({
+              status: 404,
+              name: 'not_found',
+              message: 'missing',
+              error: true,
+              reason: 'deleted',
+            });
+            done();
           });
-          done();
-        });
-    });
+      })
+      .catch(justFail);
   });
 
   it('should handle an update action without a previous insert', done => {
