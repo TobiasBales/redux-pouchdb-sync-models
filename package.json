@@ -40,6 +40,7 @@
     "semantic-release": "^6.3.6",
     "ts-jest": "^20.0.6",
     "tslint": "^5.4.3",
+    "tslint-language-service": "^0.9.6",
     "tslint-microsoft-contrib": "^5.0.0",
     "tsutils": "1.6.0",
     "typescript": "2.3.4",

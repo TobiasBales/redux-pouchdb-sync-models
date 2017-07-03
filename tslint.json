@@ -33,6 +33,7 @@
       true,
       120
     ],
+    "import-name": false,
     "missing-jsdoc": false,
     "no-reserved-keywords": false,
     "no-angle-bracket-type-assertion": true,

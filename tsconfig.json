@@ -20,7 +20,12 @@
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true,
     "experimentalDecorators": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "plugins": [
+      {
+        "name": "tslint-language-service"
+      }
+    ]
   },
   "exclude": [
     "node_modules",
