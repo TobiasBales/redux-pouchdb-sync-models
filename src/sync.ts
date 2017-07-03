@@ -185,7 +185,7 @@ const removeDocument = (
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
-  registerChangeCallback?: (callback: ChangeCallback) => () => void,
+  replication?: PouchDB.Replication.Sync<MaybeModel>,
   modelsToSync?: string[],
   name?: string,
   done?: () => void
@@ -194,8 +194,8 @@ export function sync<State>(
 
   return (api: MiddlewareAPI<State>) => {
     return (next: Dispatch<State>) => {
-      if (registerChangeCallback !== undefined) {
-        registerChangeCallback(changeCallback(api, knownIDs, modelsToSync));
+      if (replication !== undefined) {
+        replication.on('change', changeCallback(api, knownIDs, modelsToSync));
       }
 
       fetchDocuments(db, api, knownIDs, modelsToSync, name, done);

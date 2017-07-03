@@ -21,10 +21,11 @@ beforeEach(async done => {
   ];
   db = new PouchDB('test', { adapter: 'memory' });
   remoteDb = new PouchDB('test-remote', { adapter: 'memory' });
+  const replication = db.sync(remoteDb, { live: true, retry: true });
 
   await db.bulkDocs(models);
 
-  const middlewares = [sync.sync(db, undefined, [kind], 'test', done)];
+  const middlewares = [sync.sync(db, replication, [kind], 'test', done)];
   store = reduxMockStore(middlewares)();
 });
 
