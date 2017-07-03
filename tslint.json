@@ -38,6 +38,7 @@
     "no-angle-bracket-type-assertion": true,
     "prefer-type-cast": false,
     "no-relative-imports": false,
+    "no-backbone-get-set-outside-model": false,
     "member-ordering": [
       true,
       "public-before-private",

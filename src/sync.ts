@@ -5,8 +5,8 @@ import { RemoveModel, UpdateModel } from './actions';
 import {
   hasMeta,
   initialized,
-  InsertModel,
   insertModel,
+  InsertModel,
   isAction,
   isDeletedDoc,
   isFromSync,
@@ -64,7 +64,9 @@ const fetchDocuments = (
   db: PouchDB.Database<MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
-  modelsToSync?: string[]
+  modelsToSync?: string[],
+  name?: string,
+  done?: () => void
 ) => {
   db
     .allDocs({ include_docs: true })
@@ -77,7 +79,7 @@ const fetchDocuments = (
           return;
         }
 
-        if (models[doc.kind] !== undefined) {
+        if (models[doc.kind] === undefined) {
           models[doc.kind] = [];
         }
 
@@ -89,9 +91,15 @@ const fetchDocuments = (
         api.dispatch(loadModels(models[kind], kind));
       });
       api.dispatch(initialized(name));
+      if (done !== undefined) {
+        done();
+      }
     })
     .catch(error => {
       api.dispatch(modelError(error as Error, OPERATION_FETCH_DOCS));
+      if (done !== undefined) {
+        done();
+      }
     });
 };
 
@@ -179,7 +187,8 @@ export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
   registerChangeCallback?: (callback: ChangeCallback) => () => void,
   modelsToSync?: string[],
-  name?: string
+  name?: string,
+  done?: () => void
 ): Middleware {
   const knownIDs: IDStorage = {};
 
@@ -189,7 +198,7 @@ export function sync<State>(
         registerChangeCallback(changeCallback(api, knownIDs, modelsToSync));
       }
 
-      fetchDocuments(db, api, knownIDs, modelsToSync);
+      fetchDocuments(db, api, knownIDs, modelsToSync, name, done);
 
       return (action: Action | ThunkAction<{}, State, {}>) => {
         if (isFromSync(action)) {
