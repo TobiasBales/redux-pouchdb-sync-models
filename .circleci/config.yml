@@ -3,7 +3,7 @@ jobs:
    build:
      working_directory: ~/redux-pouchdb-sync-models
      docker:
-       - image: circleci/node:6.9.5
+       - image: circleci/node:6
      steps:
        - checkout
        - run: yarn test
