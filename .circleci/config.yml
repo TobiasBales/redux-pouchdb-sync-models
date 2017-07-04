@@ -13,5 +13,5 @@ jobs:
           name: Release master
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              npm run semantic-release
+              npm run semantic-release || exit 0
             fi
