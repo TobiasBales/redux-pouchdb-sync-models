@@ -13,7 +13,7 @@
     "build": "yarn run clean; tsc -p .",
     "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'",
     "test": "jest",
-    "semantic-release": "semantic-release pre && yarn run build && npm publish && semantic-release post"
+    "semantic-release": "semantic-release pre && npm run build && npm publish && semantic-release post"
   },
   "jest": {
     "transform": {
