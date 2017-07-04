@@ -15,10 +15,6 @@ let remoteDb: PouchDB.Database;
 let store: MockStore<{}>;
 let models: { kind: string; _id: string; value: number }[];
 
-function justFail(err: Error) {
-  fail('Unexpected promise rejection');
-}
-
 beforeEach(async done => {
   models = [
     { kind: kind, _id: '1234', value: 1234 },
