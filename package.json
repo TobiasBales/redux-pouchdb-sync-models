@@ -31,6 +31,7 @@
     "@types/jest": "^20.0.2",
     "@types/pouchdb": "^6.1.1",
     "@types/redux-mock-store": "^0.0.9",
+    "condition-circle": "^1.5.0",
     "jest": "^20.0.4",
     "pouchdb": "^6.2.0",
     "pouchdb-adapter-memory": "^6.2.0",
@@ -45,5 +46,8 @@
     "tsutils": "1.6.0",
     "typescript": "2.3.4",
     "wallaby-webpack": "^0.0.38"
+  },
+  "release": {
+    "verifyConditions": "condition-circle"
   }
 }
