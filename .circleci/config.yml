@@ -6,6 +6,7 @@ jobs:
        - image: circleci/node:6
      steps:
        - checkout
+       - run: yarn
        - run: yarn test
        - run: yarn lint
        - deploy:
