@@ -18,6 +18,7 @@ import {
   UpdateModel,
   updateModel,
 } from './actions';
+import { ReplicationWrapper } from './ReplicationWrapper';
 import { sync } from './sync';
 
 // Sync middleware
@@ -52,3 +53,5 @@ export {
   updateModel,
   removeModel,
 };
+
+export { ReplicationWrapper };
