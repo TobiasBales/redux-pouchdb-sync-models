@@ -10,7 +10,7 @@
   },
   "scripts": {
     "clean": "rm -f index.d.ts; rm -f index.js; rm -f index.js.map",
-    "build": "yarn run clean; tsc -p .",
+    "build": "yarn run clean && tsc -p . && echo 'Built javascript files'",
     "lint": "tslint --type-check --project tsconfig.json 'src/**/*.{ts,tsx}'",
     "test": "jest",
     "semantic-release": "semantic-release pre && npm run build && npm publish && semantic-release post"
