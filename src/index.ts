@@ -1,15 +1,21 @@
 import {
   INITIALIZED,
+  Initialized,
   initialized,
   INSERT_MODEL,
+  InsertModel,
   insertModel,
   LOAD_MODELS,
+  LoadModels,
   loadModels,
   MODEL_ERROR,
+  ModelError,
   modelError,
   REMOVE_MODEL,
+  RemoveModel,
   removeModel,
   UPDATE_MODEL,
+  UpdateModel,
   updateModel,
 } from './actions';
 import { sync } from './sync';
@@ -25,6 +31,16 @@ export {
   MODEL_ERROR,
   UPDATE_MODEL,
   REMOVE_MODEL,
+};
+
+// Action types
+export {
+  Initialized,
+  InsertModel,
+  LoadModels,
+  ModelError,
+  RemoveModel,
+  UpdateModel,
 };
 
 // Action creators
