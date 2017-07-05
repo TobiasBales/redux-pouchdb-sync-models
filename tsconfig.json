@@ -26,9 +26,7 @@
       }
     ]
   },
-  "files": [
-    "src/index.ts"
-  ],
+  "rootDir": "src",
   "exclude": [
     "node_modules",
     "build",
