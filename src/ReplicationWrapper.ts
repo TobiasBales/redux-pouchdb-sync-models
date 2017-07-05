@@ -10,6 +10,8 @@ export type EventType =
   | 'denied'
   | 'error';
 
+export type Listener = () => void;
+
 // tslint:disable unified-signatures
 
 /**
@@ -19,9 +21,18 @@ export type EventType =
  */
 export class ReplicationWrapper {
   private wrapped: PouchDB.Replication.Sync<MaybeModel>[];
+  private listeners: { [k: string]: Listener[] };
 
   constructor() {
     this.wrapped = [];
+    this.listeners = {
+      change: [],
+      active: [],
+      complete: [],
+      paused: [],
+      denied: [],
+      error: [],
+    };
   }
 
   public on(event: 'change', listener: (info: ChangeInfo) => void): this;
@@ -30,10 +41,12 @@ export class ReplicationWrapper {
   public on(event: 'paused', listener: (err: {}) => void): this;
   public on(event: 'denied', listener: (err: {}) => void): this;
   public on(event: 'error', listener: (err: {}) => void): this;
-  public on(event: EventType, listener: () => void): this {
+  public on(event: EventType, listener: Listener): this {
     this.wrapped.forEach(sync => {
       sync.on(event as 'change', listener);
     });
+
+    this.listeners[event].push(listener);
 
     return this;
   }
@@ -42,5 +55,18 @@ export class ReplicationWrapper {
     this.wrapped.forEach(sync => {
       sync.cancel();
     });
+  }
+
+  public add(sync: PouchDB.Replication.Sync<MaybeModel>): this {
+    this.wrapped.push(sync);
+
+    const types = ['change', 'active', 'complete', 'paused', 'denied', 'error'];
+    types.forEach(event => {
+      this.listeners[event].forEach(listener => {
+        sync.on(event as 'change', listener);
+      });
+    });
+
+    return this;
   }
 }
