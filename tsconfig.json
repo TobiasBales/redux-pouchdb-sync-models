@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "system",
-    "outFile": "index.js",
+    "module": "commonjs",
+    "outDir": ".",
     "target": "es5",
     "lib": [
       "es6",
@@ -12,7 +12,6 @@
     "declaration": true,
     "jsx": "react",
     "moduleResolution": "node",
-    "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
@@ -27,6 +26,9 @@
       }
     ]
   },
+  "files": [
+    "src/index.ts"
+  ],
   "exclude": [
     "node_modules",
     "build",
