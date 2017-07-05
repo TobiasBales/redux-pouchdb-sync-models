@@ -182,10 +182,17 @@ const removeDocument = (
     });
 };
 
+export interface ReplicationNotifier {
+  on(
+    event: 'change',
+    info: PouchDB.Replication.SyncResult<MaybeModel>
+  ): ReplicationNotifier;
+}
+
 // tslint:disable max-func-body-length
 export function sync<State>(
   db: PouchDB.Database<MaybeModel>,
-  replication?: PouchDB.Replication.Sync<MaybeModel>,
+  replication?: ReplicationNotifier,
   modelsToSync?: string[],
   name?: string,
   done?: () => void
