@@ -61,7 +61,7 @@ const changeCallback = (
   });
 };
 
-const fetchDocuments = (
+const fetchDocuments = async (
   db: PouchDB.Database<MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
@@ -69,119 +69,95 @@ const fetchDocuments = (
   name?: string,
   done?: () => void
 ) => {
-  db
-    .allDocs({ include_docs: true })
-    .then(response => {
-      const docs = response.rows.map(row => row.doc);
-      const models: ModelStorage = {};
+  const response = await db.allDocs({ include_docs: true });
+  const docs = response.rows.map(row => row.doc);
+  const models: ModelStorage = {};
 
-      docs.forEach(doc => {
-        if (!isModelToSync(doc, modelsToSync)) {
-          return;
-        }
+  docs.forEach(doc => {
+    if (!isModelToSync(doc, modelsToSync)) {
+      return;
+    }
 
-        if (models[doc.kind] === undefined) {
-          models[doc.kind] = [];
-        }
+    if (models[doc.kind] === undefined) {
+      models[doc.kind] = [];
+    }
 
-        models[doc.kind].push(doc);
-        knownIDs[doc._id] = doc.kind;
-      });
+    models[doc.kind].push(doc);
+    knownIDs[doc._id] = doc.kind;
+  });
 
-      Object.keys(models).forEach(kind => {
-        api.dispatch(loadModels(models[kind], kind));
-        api.dispatch(modelInitialized(kind));
-      });
-      api.dispatch(initialized(name));
-      if (done !== undefined) {
-        done();
-      }
-    })
-    .catch(error => {
-      api.dispatch(modelError(error as Error, OPERATION_FETCH_DOCS));
-      if (done !== undefined) {
-        done();
-      }
-    });
+  Object.keys(models).forEach(kind => {
+    api.dispatch(loadModels(models[kind], kind));
+    api.dispatch(modelInitialized(kind));
+  });
+  api.dispatch(initialized(name));
+  if (done !== undefined) {
+    done();
+  }
 };
 
 export type ChangeCallback = (
   arg: PouchDB.Replication.SyncResult<MaybeModel>
 ) => void;
 
-const insertDocument = (
+const insertDocument = async (
   db: PouchDB.Database<MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   action: InsertModel<SyncModel>,
   next: Dispatch<{}>
 ) => {
-  db
-    .put(
-      action.payload.toJSON !== undefined
-        ? action.payload.toJSON()
-        : action.payload
-    )
-    .then(async () => {
-      return db.get(action.payload._id).then(doc => {
-        if (!isModel(doc)) {
-          return;
-        }
-        action.payload = doc;
-        next(action);
-      });
-    })
-    .catch(error => {
-      api.dispatch(modelError(error as Error, OPERATION_INSERT));
-    });
+  await db.put(
+    action.payload.toJSON !== undefined
+      ? action.payload.toJSON()
+      : action.payload
+  );
 
   knownIDs[action.payload._id] = action.payload.kind;
+
+  return db.get(action.payload._id).then(doc => {
+    if (!isModel(doc)) {
+      return;
+    }
+    action.payload = doc;
+    next(action);
+  });
 };
 
-const updateDocument = (
+const updateDocument = async (
   db: PouchDB.Database<MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   action: UpdateModel<SyncModel>,
   next: Dispatch<{}>
 ) => {
-  db
-    .put(
-      action.payload.toJSON !== undefined
-        ? action.payload.toJSON()
-        : action.payload
-    )
-    .then(async () => {
-      return db.get(action.payload._id).then(doc => {
-        if (!isModel(doc)) {
-          return;
-        }
-        action.payload = doc;
-        next(action);
-      });
-    })
-    .catch(error => {
-      api.dispatch(modelError(error as Error, OPERATION_UPDATE));
-    });
+  await db.put(
+    action.payload.toJSON !== undefined
+      ? action.payload.toJSON()
+      : action.payload
+  );
+
   knownIDs[action.payload._id] = action.payload.kind;
+
+  return db.get(action.payload._id).then(doc => {
+    if (!isModel(doc)) {
+      return;
+    }
+    action.payload = doc;
+    next(action);
+  });
 };
 
-const removeDocument = (
+const removeDocument = async (
   db: PouchDB.Database<MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   action: RemoveModel,
   next: Dispatch<{}>
 ) => {
-  db
-    .remove(action.payload)
-    .then(() => {
-      delete knownIDs[action.payload._id];
-      next(action);
-    })
-    .catch(error => {
-      api.dispatch(modelError(error as Error, OPERATION_REMOVE));
-    });
+  await db.remove(action.payload);
+  delete knownIDs[action.payload._id];
+  next(action);
 };
 
 export interface ReplicationNotifier {
@@ -207,7 +183,12 @@ export function sync<State>(
         replication.on('change', changeCallback(api, knownIDs, modelsToSync));
       }
 
-      fetchDocuments(db, api, knownIDs, modelsToSync, name, done);
+      fetchDocuments(db, api, knownIDs, modelsToSync, name, done).catch(err => {
+        api.dispatch(modelError(err as Error, OPERATION_FETCH_DOCS));
+        if (done !== undefined) {
+          done();
+        }
+      });
 
       return (action: Action | ThunkAction<{}, State, {}>) => {
         if (isFromSync(action)) {
@@ -232,11 +213,17 @@ export function sync<State>(
         }
 
         if (isInsertAction(action)) {
-          insertDocument(db, api, knownIDs, action, next);
+          insertDocument(db, api, knownIDs, action, next).catch(err => {
+            api.dispatch(modelError(err as Error, OPERATION_INSERT));
+          });
         } else if (isUpdateAction(action)) {
-          updateDocument(db, api, knownIDs, action, next);
+          updateDocument(db, api, knownIDs, action, next).catch(err => {
+            api.dispatch(modelError(err as Error, OPERATION_UPDATE));
+          });
         } else if (isRemoveAction(action)) {
-          removeDocument(db, api, knownIDs, action, next);
+          removeDocument(db, api, knownIDs, action, next).catch(err => {
+            api.dispatch(modelError(err as Error, OPERATION_REMOVE));
+          });
         } else {
           // tslint:disable-next-line no-any
           next((action as any) as ThunkAction<{}, State, {}>);
