@@ -1,6 +1,5 @@
 import { Action, Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { ThunkAction } from 'redux-thunk';
-import { RemoveModel, UpdateModel } from './actions';
 
 import {
   hasMeta,
@@ -20,7 +19,9 @@ import {
   modelError,
   modelInitialized,
   removeModel,
+  RemoveModel,
   SyncModel,
+  UpdateModel,
   updateModel,
 } from './actions';
 import {
