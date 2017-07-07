@@ -39,20 +39,23 @@ afterEach(async () => {
 describe('initialization', () => {
   it('should dispatch initialized', () => {
     const actions = store.getActions();
-    expect(actions.length).toBe(2);
-    expect(actions[1]).toMatchObject({
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions).toContainEqual({
       meta: { name: 'test' },
       type: sync.INITIALIZED,
     });
   });
 
-  it('should dispatch load_models', () => {
+  it('should dispatch load_models', async () => {
     const actions = store.getActions();
-    expect(actions.length).toBe(2);
-    expect(actions[0]).toMatchObject({
+    const storedModels = await Promise.all(
+      models.map(async m => db.get(m._id))
+    );
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions).toContainEqual({
       type: sync.LOAD_MODELS,
       meta: { kind: kind },
-      payload: models,
+      payload: storedModels,
     });
   });
 });
