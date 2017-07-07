@@ -102,10 +102,8 @@ export type ChangeCallback = (
 
 const insertDocument = async (
   db: PouchDB.Database<MaybeModel>,
-  api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
-  action: InsertModel<SyncModel>,
-  next: Dispatch<{}>
+  action: InsertModel<SyncModel>
 ) => {
   await db.put(
     action.payload.toJSON !== undefined
@@ -113,23 +111,20 @@ const insertDocument = async (
       : action.payload
   );
 
-  knownIDs[action.payload._id] = action.payload.kind;
+  const doc = await db.get(action.payload._id);
+  if (!isModel(doc)) {
+    return action;
+  }
 
-  return db.get(action.payload._id).then(doc => {
-    if (!isModel(doc)) {
-      return;
-    }
-    action.payload = doc;
-    next(action);
-  });
+  knownIDs[action.payload._id] = action.payload.kind;
+  action.payload = doc;
+
+  return action;
 };
 
 const updateDocument = async (
   db: PouchDB.Database<MaybeModel>,
-  api: MiddlewareAPI<{}>,
-  knownIDs: IDStorage,
-  action: UpdateModel<SyncModel>,
-  next: Dispatch<{}>
+  action: UpdateModel<SyncModel>
 ) => {
   await db.put(
     action.payload.toJSON !== undefined
@@ -137,27 +132,24 @@ const updateDocument = async (
       : action.payload
   );
 
-  knownIDs[action.payload._id] = action.payload.kind;
+  const doc = await db.get(action.payload._id);
+  if (!isModel(doc)) {
+    return action;
+  }
+  action.payload = doc;
 
-  return db.get(action.payload._id).then(doc => {
-    if (!isModel(doc)) {
-      return;
-    }
-    action.payload = doc;
-    next(action);
-  });
+  return action;
 };
 
 const removeDocument = async (
   db: PouchDB.Database<MaybeModel>,
-  api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
-  action: RemoveModel,
-  next: Dispatch<{}>
+  action: RemoveModel
 ) => {
   await db.remove(action.payload);
   delete knownIDs[action.payload._id];
-  next(action);
+
+  return action;
 };
 
 export interface ReplicationNotifier {
@@ -213,15 +205,15 @@ export function sync<State>(
         }
 
         if (isInsertAction(action)) {
-          insertDocument(db, api, knownIDs, action, next).catch(err => {
+          insertDocument(db, knownIDs, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_INSERT));
           });
         } else if (isUpdateAction(action)) {
-          updateDocument(db, api, knownIDs, action, next).catch(err => {
+          updateDocument(db, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_UPDATE));
           });
         } else if (isRemoveAction(action)) {
-          removeDocument(db, api, knownIDs, action, next).catch(err => {
+          removeDocument(db, knownIDs, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_REMOVE));
           });
         } else {
