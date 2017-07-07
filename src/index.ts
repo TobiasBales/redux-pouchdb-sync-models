@@ -10,8 +10,11 @@ import {
   loadModels,
   MaybeModel,
   MODEL_ERROR,
+  MODEL_INITIALIZED,
   ModelError,
   modelError,
+  modelInitialized,
+  ModelInitialized,
   REMOVE_MODEL,
   RemoveModel,
   removeModel,
@@ -31,6 +34,7 @@ export {
   INITIALIZED,
   LOAD_MODELS,
   MODEL_ERROR,
+  MODEL_INITIALIZED,
   UPDATE_MODEL,
   REMOVE_MODEL,
 };
@@ -41,6 +45,7 @@ export {
   InsertModel,
   LoadModels,
   ModelError,
+  ModelInitialized,
   RemoveModel,
   UpdateModel,
 };
@@ -51,6 +56,7 @@ export {
   insertModel,
   loadModels,
   modelError,
+  modelInitialized,
   updateModel,
   removeModel,
 };

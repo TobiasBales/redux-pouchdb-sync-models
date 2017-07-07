@@ -18,6 +18,7 @@ import {
   loadModels,
   MaybeModel,
   modelError,
+  modelInitialized,
   OPERATION_FETCH_DOCS,
   OPERATION_INSERT,
   OPERATION_REMOVE,
@@ -89,6 +90,7 @@ const fetchDocuments = (
 
       Object.keys(models).forEach(kind => {
         api.dispatch(loadModels(models[kind], kind));
+        api.dispatch(modelInitialized(kind));
       });
       api.dispatch(initialized(name));
       if (done !== undefined) {

@@ -16,6 +16,8 @@ export type MODEL_ERROR = '@@sync/ERROR';
 export const MODEL_ERROR: MODEL_ERROR = '@@sync/ERROR';
 export type INITIALIZED = '@@sync/INITIALIZED';
 export const INITIALIZED: INITIALIZED = '@@sync/INITIALIZED';
+export type MODEL_INITIALIZED = '@@sync/MODEL_INITIALIZED';
+export const MODEL_INITIALIZED: MODEL_INITIALIZED = '@@sync/MODEL_INITIALIZED';
 
 export type OPERATION_CHANGES = 'OPERATION_CHANGES';
 export const OPERATION_CHANGES: OPERATION_CHANGES = 'OPERATION_CHANGES';
@@ -42,7 +44,7 @@ export type LoadModels<M extends SyncModel> = {
   meta: { kind: string };
 };
 
-export function initialized(name?: string) {
+export function initialized(name?: string): Initialized {
   return {
     type: INITIALIZED,
     meta: {
@@ -54,6 +56,15 @@ export function initialized(name?: string) {
 export type Initialized = {
   type: INITIALIZED;
   meta: { name?: string };
+};
+
+export function modelInitialized(kind: string): ModelInitialized {
+  return { type: MODEL_INITIALIZED, meta: { kind: kind } };
+}
+
+export type ModelInitialized = {
+  type: MODEL_INITIALIZED;
+  meta: { kind: string };
 };
 
 export function loadModels<M extends SyncModel>(
@@ -78,7 +89,7 @@ export type InsertModel<M extends SyncModel> = {
 export function insertModel<M extends SyncModel>(
   model: M,
   fromSync: boolean = false
-) {
+): InsertModel<M> {
   return {
     type: INSERT_MODEL,
     payload: model,
@@ -95,7 +106,7 @@ export type UpdateModel<M extends SyncModel> = {
 export function updateModel<M extends SyncModel>(
   model: M,
   fromSync: boolean = false
-) {
+): UpdateModel<M> {
   return {
     type: UPDATE_MODEL,
     payload: model,
@@ -113,7 +124,7 @@ export function removeModel(
   doc: { _id: string; _rev: string },
   kind: string,
   fromSync: boolean = false
-) {
+): RemoveModel {
   return {
     type: REMOVE_MODEL,
     payload: doc,

@@ -57,6 +57,18 @@ describe('initialization', () => {
       meta: { kind: kind },
       payload: storedModels,
     });
+    expect(actions).toContainEqual({
+      type: sync.MODEL_INITIALIZED,
+      meta: { kind: kind },
+    });
+  });
+  it('should dispatch model_initialized', () => {
+    const actions = store.getActions();
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions).toContainEqual({
+      type: sync.MODEL_INITIALIZED,
+      meta: { kind: kind },
+    });
   });
 });
 
