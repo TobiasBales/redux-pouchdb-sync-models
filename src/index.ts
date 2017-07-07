@@ -1,27 +1,29 @@
 import {
-  INITIALIZED,
   Initialized,
   initialized,
-  INSERT_MODEL,
   InsertModel,
   insertModel,
-  LOAD_MODELS,
   LoadModels,
   loadModels,
   MaybeModel,
-  MODEL_ERROR,
-  MODEL_INITIALIZED,
   ModelError,
   modelError,
   modelInitialized,
   ModelInitialized,
-  REMOVE_MODEL,
   RemoveModel,
   removeModel,
-  UPDATE_MODEL,
   UpdateModel,
   updateModel,
 } from './actions';
+import {
+  INITIALIZED,
+  INSERT_MODEL,
+  LOAD_MODELS,
+  MODEL_ERROR,
+  MODEL_INITIALIZED,
+  REMOVE_MODEL,
+  UPDATE_MODEL,
+} from './constants';
 import { ReplicationWrapper } from './ReplicationWrapper';
 import { sync } from './sync';
 

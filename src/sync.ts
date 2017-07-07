@@ -19,14 +19,16 @@ import {
   MaybeModel,
   modelError,
   modelInitialized,
-  OPERATION_FETCH_DOCS,
-  OPERATION_INSERT,
-  OPERATION_REMOVE,
-  OPERATION_UPDATE,
   removeModel,
   SyncModel,
   updateModel,
 } from './actions';
+import {
+  OPERATION_FETCH_DOCS,
+  OPERATION_INSERT,
+  OPERATION_REMOVE,
+  OPERATION_UPDATE,
+} from './constants';
 
 type ModelStorage = { [k: string]: SyncModel[] };
 type IDStorage = { [k: string]: string };
@@ -214,6 +216,7 @@ export function sync<State>(
           removeDocument(db, knownIDs, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_REMOVE));
           });
+
           return;
         }
 

@@ -1,52 +1,27 @@
 import { Action } from 'redux';
 
+import * as constants from './constants';
+
 export interface MaybeModel {
   kind?: string;
 }
 
-export type LOAD_MODELS = '@@sync/LOAD_MODELS';
-export const LOAD_MODELS: LOAD_MODELS = '@@sync/LOAD_MODELS';
-export type INSERT_MODEL = '@@sync/INSERT_MODEL';
-export const INSERT_MODEL: INSERT_MODEL = '@@sync/INSERT_MODEL';
-export type UPDATE_MODEL = '@@sync/UPDATE_MODEL';
-export const UPDATE_MODEL: UPDATE_MODEL = '@@sync/UPDATE_MODEL';
-export type REMOVE_MODEL = '@@sync/REMOVE_MODEL';
-export const REMOVE_MODEL: REMOVE_MODEL = '@@sync/REMOVE_MODEL';
-export type MODEL_ERROR = '@@sync/ERROR';
-export const MODEL_ERROR: MODEL_ERROR = '@@sync/ERROR';
-export type INITIALIZED = '@@sync/INITIALIZED';
-export const INITIALIZED: INITIALIZED = '@@sync/INITIALIZED';
-export type MODEL_INITIALIZED = '@@sync/MODEL_INITIALIZED';
-export const MODEL_INITIALIZED: MODEL_INITIALIZED = '@@sync/MODEL_INITIALIZED';
-
-export type OPERATION_CHANGES = 'OPERATION_CHANGES';
-export const OPERATION_CHANGES: OPERATION_CHANGES = 'OPERATION_CHANGES';
-export type OPERATION_FETCH_DOCS = 'OPERATION_FETCH_DOCS';
-export const OPERATION_FETCH_DOCS: OPERATION_FETCH_DOCS =
-  'OPERATION_FETCH_DOCS';
-export type OPERATION_INSERT = 'OPERATION_INSERT';
-export const OPERATION_INSERT: OPERATION_INSERT = 'OPERATION_INSERT';
-export type OPERATION_UPDATE = 'OPERATION_UPDATE';
-export const OPERATION_UPDATE: OPERATION_UPDATE = 'OPERATION_UPDATE';
-export type OPERATION_REMOVE = 'OPERATION_REMOVE';
-export const OPERATION_REMOVE: OPERATION_REMOVE = 'OPERATION_REMOVE';
-
 export type Operation =
-  | OPERATION_CHANGES
-  | OPERATION_FETCH_DOCS
-  | OPERATION_INSERT
-  | OPERATION_UPDATE
-  | OPERATION_REMOVE;
+  | constants.OPERATION_CHANGES
+  | constants.OPERATION_FETCH_DOCS
+  | constants.OPERATION_INSERT
+  | constants.OPERATION_UPDATE
+  | constants.OPERATION_REMOVE;
 
 export type LoadModels<M extends SyncModel> = {
-  type: LOAD_MODELS;
+  type: constants.LOAD_MODELS;
   payload: M[];
   meta: { kind: string };
 };
 
 export function initialized(name?: string): Initialized {
   return {
-    type: INITIALIZED,
+    type: constants.INITIALIZED,
     meta: {
       name: name,
     },
@@ -54,16 +29,16 @@ export function initialized(name?: string): Initialized {
 }
 
 export type Initialized = {
-  type: INITIALIZED;
+  type: constants.INITIALIZED;
   meta: { name?: string };
 };
 
 export function modelInitialized(kind: string): ModelInitialized {
-  return { type: MODEL_INITIALIZED, meta: { kind: kind } };
+  return { type: constants.MODEL_INITIALIZED, meta: { kind: kind } };
 }
 
 export type ModelInitialized = {
-  type: MODEL_INITIALIZED;
+  type: constants.MODEL_INITIALIZED;
   meta: { kind: string };
 };
 
@@ -71,17 +46,13 @@ export function loadModels<M extends SyncModel>(
   models: M[],
   kind: string
 ): LoadModels<M> {
-  return {
-    type: LOAD_MODELS,
-    payload: models,
-    meta: { kind: kind },
-  };
+  return { type: constants.LOAD_MODELS, payload: models, meta: { kind: kind } };
 }
 
 export type ModelMeta = { kind: string; fromSync: boolean };
 
 export type InsertModel<M extends SyncModel> = {
-  type: INSERT_MODEL;
+  type: constants.INSERT_MODEL;
   payload: M;
   meta: ModelMeta;
 };
@@ -91,14 +62,14 @@ export function insertModel<M extends SyncModel>(
   fromSync: boolean = false
 ): InsertModel<M> {
   return {
-    type: INSERT_MODEL,
+    type: constants.INSERT_MODEL,
     payload: model,
     meta: { kind: model.kind, fromSync: fromSync },
   };
 }
 
 export type UpdateModel<M extends SyncModel> = {
-  type: UPDATE_MODEL;
+  type: constants.UPDATE_MODEL;
   payload: M;
   meta: ModelMeta;
 };
@@ -108,14 +79,14 @@ export function updateModel<M extends SyncModel>(
   fromSync: boolean = false
 ): UpdateModel<M> {
   return {
-    type: UPDATE_MODEL,
+    type: constants.UPDATE_MODEL,
     payload: model,
     meta: { kind: model.kind, fromSync: fromSync },
   };
 }
 
 export type RemoveModel = {
-  type: REMOVE_MODEL;
+  type: constants.REMOVE_MODEL;
   payload: { _id: string; _rev: string };
   meta: ModelMeta;
 };
@@ -126,21 +97,21 @@ export function removeModel(
   fromSync: boolean = false
 ): RemoveModel {
   return {
-    type: REMOVE_MODEL,
+    type: constants.REMOVE_MODEL,
     payload: doc,
     meta: { kind: kind, fromSync: fromSync },
   };
 }
 
 export type ModelError = {
-  type: MODEL_ERROR;
+  type: constants.MODEL_ERROR;
   payload: Error;
   meta: { operation: Operation };
 };
 
 export function modelError(error: Error, operation: Operation): ModelError {
   return {
-    type: MODEL_ERROR,
+    type: constants.MODEL_ERROR,
     payload: error,
     meta: { operation: operation },
   };
@@ -195,17 +166,17 @@ type ActionWithFromSyncMeta = {
 export function isInsertAction(
   action: {} | Function
 ): action is InsertModel<SyncModel> {
-  return isAction(action) && action.type === INSERT_MODEL;
+  return isAction(action) && action.type === constants.INSERT_MODEL;
 }
 
 export function isUpdateAction(
   action: {} | Function
 ): action is UpdateModel<SyncModel> {
-  return isAction(action) && action.type === UPDATE_MODEL;
+  return isAction(action) && action.type === constants.UPDATE_MODEL;
 }
 
 export function isRemoveAction(action: {} | Function): action is RemoveModel {
-  return isAction(action) && action.type === REMOVE_MODEL;
+  return isAction(action) && action.type === constants.REMOVE_MODEL;
 }
 
 export function hasMeta(action: {} | Function): action is ActionWithMeta {
