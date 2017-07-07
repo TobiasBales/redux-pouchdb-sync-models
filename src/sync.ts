@@ -34,7 +34,7 @@ const changeCallback = (
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   modelsToSync?: string[]
-) => (result: PouchDB.Replication.SyncResult<MaybeModel>) => {
+) => (result: PouchDB.Replication.SyncResult<MaybeModel>): void => {
   if (result.direction === 'push') {
     return;
   }
@@ -185,7 +185,7 @@ const removeDocument = (
 export interface ReplicationNotifier {
   on(
     event: 'change',
-    info: PouchDB.Replication.SyncResult<MaybeModel>
+    listener: (info: PouchDB.Replication.SyncResult<MaybeModel>) => void
   ): ReplicationNotifier;
 }
 

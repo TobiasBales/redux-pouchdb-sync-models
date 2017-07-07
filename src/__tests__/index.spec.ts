@@ -21,8 +21,8 @@ beforeEach(async done => {
     { kind: kind, _id: '2345', value: 2345 },
     { kind: kind, _id: '3456', value: 3456 },
   ];
-  db = new PouchDB('test', { adapter: 'memory' });
-  remoteDb = new PouchDB('test-remote', { adapter: 'memory' });
+  db = new PouchDB<sync.MaybeModel>('test', { adapter: 'memory' });
+  remoteDb = new PouchDB<sync.MaybeModel>('test-remote', { adapter: 'memory' });
   const replication = db.sync(remoteDb, { live: true, retry: true });
 
   await db.bulkDocs(models);

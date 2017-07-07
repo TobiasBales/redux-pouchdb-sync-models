@@ -8,6 +8,7 @@ import {
   LOAD_MODELS,
   LoadModels,
   loadModels,
+  MaybeModel,
   MODEL_ERROR,
   ModelError,
   modelError,
@@ -54,4 +55,4 @@ export {
   removeModel,
 };
 
-export { ReplicationWrapper };
+export { MaybeModel, ReplicationWrapper };
