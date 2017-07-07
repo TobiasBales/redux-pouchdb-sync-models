@@ -183,23 +183,13 @@ export function sync<State>(
       });
 
       return (action: Action | ThunkAction<{}, State, {}>) => {
-        if (isFromSync(action)) {
-          next(action as ThunkAction<{}, State, {}>);
-
-          return;
-        }
-        if (!isAction(action)) {
-          next(action as ThunkAction<{}, State, {}>);
-
-          return;
-        }
-
         if (
-          isAction(action) &&
-          hasMeta(action) &&
+          isFromSync(action) ||
+          !isAction(action) ||
+          !hasMeta(action) ||
           !isModelToSync(action.meta, modelsToSync)
         ) {
-          next(action);
+          next(action as ThunkAction<{}, State, {}>);
 
           return;
         }
@@ -208,18 +198,27 @@ export function sync<State>(
           insertDocument(db, knownIDs, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_INSERT));
           });
-        } else if (isUpdateAction(action)) {
+
+          return;
+        }
+
+        if (isUpdateAction(action)) {
           updateDocument(db, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_UPDATE));
           });
-        } else if (isRemoveAction(action)) {
+
+          return;
+        }
+
+        if (isRemoveAction(action)) {
           removeDocument(db, knownIDs, action).then(next).catch(err => {
             api.dispatch(modelError(err as Error, OPERATION_REMOVE));
           });
-        } else {
-          // tslint:disable-next-line no-any
-          next((action as any) as ThunkAction<{}, State, {}>);
+          return;
         }
+
+        // tslint:disable-next-line no-any
+        next((action as any) as ThunkAction<{}, State, {}>);
       };
     };
   };
