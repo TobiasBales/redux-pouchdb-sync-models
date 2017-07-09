@@ -10,7 +10,10 @@ export type Operation =
   | constants.OPERATION_CHANGES
   | constants.OPERATION_FETCH_DOCS
   | constants.OPERATION_INSERT
+  | constants.OPERATION_BULK_INSERT
+  | constants.OPERATION_BULK_UPDATE
   | constants.OPERATION_UPDATE
+  | constants.OPERATION_BULK_REMOVE
   | constants.OPERATION_REMOVE;
 
 export type LoadModels<M extends SyncModel> = {
@@ -68,6 +71,24 @@ export function insertModel<M extends SyncModel>(
   };
 }
 
+export type InsertBulkModels<M extends SyncModel> = {
+  type: constants.INSERT_BULK_MODELS;
+  payload: M[];
+  meta: ModelMeta;
+};
+
+export function insertBulkModels<M extends SyncModel>(
+  models: M[],
+  kind: string,
+  fromSync: boolean = false
+): InsertBulkModels<M> {
+  return {
+    type: constants.INSERT_BULK_MODELS,
+    payload: models,
+    meta: { kind: kind, fromSync: fromSync },
+  };
+}
+
 export type UpdateModel<M extends SyncModel> = {
   type: constants.UPDATE_MODEL;
   payload: M;
@@ -85,6 +106,24 @@ export function updateModel<M extends SyncModel>(
   };
 }
 
+export type UpdateBulkModels<M extends SyncModel> = {
+  type: constants.UPDATE_BULK_MODELS;
+  payload: M[];
+  meta: ModelMeta;
+};
+
+export function updateBulkModels<M extends SyncModel>(
+  models: M[],
+  kind: string,
+  fromSync: boolean = false
+): UpdateBulkModels<M> {
+  return {
+    type: constants.UPDATE_BULK_MODELS,
+    payload: models,
+    meta: { kind: kind, fromSync: fromSync },
+  };
+}
+
 export type RemoveModel = {
   type: constants.REMOVE_MODEL;
   payload: { _id: string; _rev: string };
@@ -99,6 +138,24 @@ export function removeModel(
   return {
     type: constants.REMOVE_MODEL,
     payload: doc,
+    meta: { kind: kind, fromSync: fromSync },
+  };
+}
+
+export type RemoveBulkModels = {
+  type: constants.REMOVE_BULK_MODELS;
+  payload: { _id: string; _rev: string }[];
+  meta: ModelMeta;
+};
+
+export function removeBulkModels(
+  models: { _id: string; _rev: string }[],
+  kind: string,
+  fromSync: boolean = false
+): RemoveBulkModels {
+  return {
+    type: constants.REMOVE_BULK_MODELS,
+    payload: models,
     meta: { kind: kind, fromSync: fromSync },
   };
 }
@@ -169,14 +226,32 @@ export function isInsertAction(
   return isAction(action) && action.type === constants.INSERT_MODEL;
 }
 
+export function isBulkInsertAction(
+  action: {} | Function
+): action is InsertBulkModels<SyncModel> {
+  return isAction(action) && action.type === constants.INSERT_BULK_MODELS;
+}
+
 export function isUpdateAction(
   action: {} | Function
 ): action is UpdateModel<SyncModel> {
   return isAction(action) && action.type === constants.UPDATE_MODEL;
 }
 
+export function isBulkUpdateAction(
+  action: {} | Function
+): action is UpdateBulkModels<SyncModel> {
+  return isAction(action) && action.type === constants.UPDATE_BULK_MODELS;
+}
+
 export function isRemoveAction(action: {} | Function): action is RemoveModel {
   return isAction(action) && action.type === constants.REMOVE_MODEL;
+}
+
+export function isBulkRemoveAction(
+  action: {} | Function
+): action is RemoveBulkModels {
+  return isAction(action) && action.type === constants.REMOVE_BULK_MODELS;
 }
 
 export function hasMeta(action: {} | Function): action is ActionWithMeta {

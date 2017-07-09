@@ -1,71 +1,82 @@
 import { Action, Dispatch, Middleware, MiddlewareAPI } from 'redux';
 import { ThunkAction } from 'redux-thunk';
 
+import * as actions from './actions';
 import {
-  hasMeta,
-  initialized,
-  insertModel,
-  InsertModel,
-  isAction,
-  isDeletedDoc,
-  isFromSync,
-  isInsertAction,
-  isModel,
-  isModelToSync,
-  isRemoveAction,
-  isUpdateAction,
-  loadModels,
-  MaybeModel,
-  modelError,
-  modelInitialized,
-  removeModel,
-  RemoveModel,
-  SyncModel,
-  UpdateModel,
-  updateModel,
-} from './actions';
-import {
+  OPERATION_BULK_INSERT,
+  OPERATION_BULK_REMOVE,
+  OPERATION_BULK_UPDATE,
   OPERATION_FETCH_DOCS,
   OPERATION_INSERT,
   OPERATION_REMOVE,
   OPERATION_UPDATE,
 } from './constants';
 
-type ModelStorage = { [k: string]: SyncModel[] };
+type ModelStorage = { [k: string]: actions.SyncModel[] };
 type IDStorage = { [k: string]: string };
 
 const changeCallback = (
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   modelsToSync?: string[]
-) => (result: PouchDB.Replication.SyncResult<MaybeModel>): void => {
+) => (result: PouchDB.Replication.SyncResult<actions.MaybeModel>): void => {
   if (result.direction === 'push') {
     return;
   }
 
-  result.change.docs.forEach(doc => {
-    if (!isModelToSync(doc, modelsToSync)) {
-      return;
-    }
+  const models: {
+    [k: string]: {
+      insert: actions.SyncModel[];
+      update: actions.SyncModel[];
+      remove: { _id: string; _rev: string }[];
+    };
+  } = {};
 
-    if (isDeletedDoc(doc) && knownIDs[doc._id] !== undefined) {
-      api.dispatch(removeModel(doc, knownIDs[doc._id], true));
+  result.change.docs.forEach(doc => {
+    if (actions.isDeletedDoc(doc) && knownIDs[doc._id] !== undefined) {
+      const kind = knownIDs[doc._id];
+      if (models[kind] === undefined) {
+        models[kind] = { insert: [], update: [], remove: [] };
+      }
+      models[kind].remove.push(doc);
+      // api.dispatch(removeModel(doc, knownIDs[doc._id], true));
       delete knownIDs[doc._id];
 
       return;
     }
 
+    if (!actions.isModelToSync(doc, modelsToSync)) {
+      return;
+    }
+
+    const kind = doc.kind;
+    if (models[kind] === undefined) {
+      models[kind] = { insert: [], update: [], remove: [] };
+    }
+
     if (knownIDs[doc._id] === undefined) {
-      api.dispatch(insertModel(doc, true));
+      models[kind].insert.push(doc);
       knownIDs[doc._id] = doc.kind;
     } else {
-      api.dispatch(updateModel(doc, true));
+      models[kind].update.push(doc);
+    }
+  });
+
+  Object.keys(models).forEach(kind => {
+    if (models[kind].insert.length > 0) {
+      api.dispatch(actions.insertBulkModels(models[kind].insert, kind, true));
+    }
+    if (models[kind].update.length > 0) {
+      api.dispatch(actions.updateBulkModels(models[kind].update, kind, true));
+    }
+    if (models[kind].remove.length > 0) {
+      api.dispatch(actions.removeBulkModels(models[kind].remove, kind, true));
     }
   });
 };
 
 const fetchDocuments = async (
-  db: PouchDB.Database<MaybeModel>,
+  db: PouchDB.Database<actions.MaybeModel>,
   api: MiddlewareAPI<{}>,
   knownIDs: IDStorage,
   modelsToSync?: string[],
@@ -77,7 +88,7 @@ const fetchDocuments = async (
   const models: ModelStorage = {};
 
   docs.forEach(doc => {
-    if (!isModelToSync(doc, modelsToSync)) {
+    if (!actions.isModelToSync(doc, modelsToSync)) {
       return;
     }
 
@@ -90,23 +101,23 @@ const fetchDocuments = async (
   });
 
   Object.keys(models).forEach(kind => {
-    api.dispatch(loadModels(models[kind], kind));
-    api.dispatch(modelInitialized(kind));
+    api.dispatch(actions.loadModels(models[kind], kind));
+    api.dispatch(actions.modelInitialized(kind));
   });
-  api.dispatch(initialized(name));
+  api.dispatch(actions.initialized(name));
   if (done !== undefined) {
     done();
   }
 };
 
 export type ChangeCallback = (
-  arg: PouchDB.Replication.SyncResult<MaybeModel>
+  arg: PouchDB.Replication.SyncResult<actions.MaybeModel>
 ) => void;
 
 const insertDocument = async (
-  db: PouchDB.Database<MaybeModel>,
+  db: PouchDB.Database<actions.MaybeModel>,
   knownIDs: IDStorage,
-  action: InsertModel<SyncModel>
+  action: actions.InsertModel<actions.SyncModel>
 ) => {
   await db.put(
     action.payload.toJSON !== undefined
@@ -115,7 +126,7 @@ const insertDocument = async (
   );
 
   const doc = await db.get(action.payload._id);
-  if (!isModel(doc)) {
+  if (!actions.isModel(doc)) {
     return action;
   }
 
@@ -125,9 +136,44 @@ const insertDocument = async (
   return action;
 };
 
+function isBulkGetOK(doc: {}): doc is { ok: actions.SyncModel } {
+  return 'ok' in doc && actions.isModel(doc);
+}
+
+const insertBulkDocuments = async (
+  db: PouchDB.Database<actions.MaybeModel>,
+  knownIDs: IDStorage,
+  action: actions.InsertBulkModels<actions.SyncModel>
+) => {
+  const data = action.payload.map(
+    m => (m.toJSON !== undefined ? m.toJSON() as actions.SyncModel : m)
+  );
+  await db.bulkDocs(data);
+  const ids = data.map(d => {
+    return { id: d._id, rev: '' };
+  });
+
+  const resp = await db.bulkGet({ docs: ids });
+  const docs = resp.results.docs.filter(d => actions.isModel(d));
+  const models: actions.SyncModel[] = [];
+
+  docs.forEach(d => {
+    if (!isBulkGetOK(d)) {
+      return;
+    }
+
+    knownIDs[d.ok._id] = d.ok.kind;
+    models.push(d.ok);
+  });
+
+  action.payload = models;
+
+  return action;
+};
+
 const updateDocument = async (
-  db: PouchDB.Database<MaybeModel>,
-  action: UpdateModel<SyncModel>
+  db: PouchDB.Database<actions.MaybeModel>,
+  action: actions.UpdateModel<actions.SyncModel>
 ) => {
   await db.put(
     action.payload.toJSON !== undefined
@@ -136,7 +182,7 @@ const updateDocument = async (
   );
 
   const doc = await db.get(action.payload._id);
-  if (!isModel(doc)) {
+  if (!actions.isModel(doc)) {
     return action;
   }
   action.payload = doc;
@@ -144,10 +190,41 @@ const updateDocument = async (
   return action;
 };
 
-const removeDocument = async (
-  db: PouchDB.Database<MaybeModel>,
+const updateBulkDocuments = async (
+  db: PouchDB.Database<actions.MaybeModel>,
   knownIDs: IDStorage,
-  action: RemoveModel
+  action: actions.UpdateBulkModels<actions.SyncModel>
+) => {
+  const data = action.payload.map(
+    m => (m.toJSON !== undefined ? m.toJSON() as actions.SyncModel : m)
+  );
+  await db.bulkDocs(data);
+  const ids = data.map(d => {
+    return { id: d._id, rev: '' };
+  });
+
+  const resp = await db.bulkGet({ docs: ids });
+  const docs = resp.results.docs.filter(d => actions.isModel(d));
+  const models: actions.SyncModel[] = [];
+
+  docs.forEach(d => {
+    if (!isBulkGetOK(d)) {
+      return;
+    }
+
+    knownIDs[d.ok._id] = d.ok.kind;
+    models.push(d.ok);
+  });
+
+  action.payload = models;
+
+  return action;
+};
+
+const removeDocument = async (
+  db: PouchDB.Database<actions.MaybeModel>,
+  knownIDs: IDStorage,
+  action: actions.RemoveModel
 ) => {
   await db.remove(action.payload);
   delete knownIDs[action.payload._id];
@@ -155,16 +232,29 @@ const removeDocument = async (
   return action;
 };
 
+const removeBulkDocuments = async (
+  db: PouchDB.Database<actions.MaybeModel>,
+  knownIDs: IDStorage,
+  action: actions.RemoveBulkModels
+) => {
+  await Promise.all(action.payload.map(async d => db.remove(d)));
+  action.payload.map(d => {
+    delete knownIDs[d._id];
+  });
+
+  return action;
+};
+
 export interface ReplicationNotifier {
   on(
     event: 'change',
-    listener: (info: PouchDB.Replication.SyncResult<MaybeModel>) => void
+    listener: (info: PouchDB.Replication.SyncResult<actions.MaybeModel>) => void
   ): ReplicationNotifier;
 }
 
 // tslint:disable max-func-body-length
 export function sync<State>(
-  db: PouchDB.Database<MaybeModel>,
+  db: PouchDB.Database<actions.MaybeModel>,
   replication?: ReplicationNotifier,
   modelsToSync?: string[],
   name?: string,
@@ -179,7 +269,7 @@ export function sync<State>(
       }
 
       fetchDocuments(db, api, knownIDs, modelsToSync, name, done).catch(err => {
-        api.dispatch(modelError(err as Error, OPERATION_FETCH_DOCS));
+        api.dispatch(actions.modelError(err as Error, OPERATION_FETCH_DOCS));
         if (done !== undefined) {
           done();
         }
@@ -187,35 +277,65 @@ export function sync<State>(
 
       return (action: Action | ThunkAction<{}, State, {}>) => {
         if (
-          isFromSync(action) ||
-          !isAction(action) ||
-          !hasMeta(action) ||
-          !isModelToSync(action.meta, modelsToSync)
+          actions.isFromSync(action) ||
+          !actions.isAction(action) ||
+          !actions.hasMeta(action) ||
+          !actions.isModelToSync(action.meta, modelsToSync)
         ) {
           next(action as ThunkAction<{}, State, {}>);
 
           return;
         }
 
-        if (isInsertAction(action)) {
+        if (actions.isInsertAction(action)) {
           insertDocument(db, knownIDs, action).then(next).catch(err => {
-            api.dispatch(modelError(err as Error, OPERATION_INSERT));
+            api.dispatch(actions.modelError(err as Error, OPERATION_INSERT));
           });
 
           return;
         }
 
-        if (isUpdateAction(action)) {
+        if (actions.isBulkInsertAction(action)) {
+          insertBulkDocuments(db, knownIDs, action).then(next).catch(err => {
+            api.dispatch(
+              actions.modelError(err as Error, OPERATION_BULK_INSERT)
+            );
+          });
+
+          return;
+        }
+
+        if (actions.isUpdateAction(action)) {
           updateDocument(db, action).then(next).catch(err => {
-            api.dispatch(modelError(err as Error, OPERATION_UPDATE));
+            api.dispatch(actions.modelError(err as Error, OPERATION_UPDATE));
           });
 
           return;
         }
 
-        if (isRemoveAction(action)) {
+        if (actions.isBulkUpdateAction(action)) {
+          updateBulkDocuments(db, knownIDs, action).then(next).catch(err => {
+            api.dispatch(
+              actions.modelError(err as Error, OPERATION_BULK_UPDATE)
+            );
+          });
+
+          return;
+        }
+
+        if (actions.isRemoveAction(action)) {
           removeDocument(db, knownIDs, action).then(next).catch(err => {
-            api.dispatch(modelError(err as Error, OPERATION_REMOVE));
+            api.dispatch(actions.modelError(err as Error, OPERATION_REMOVE));
+          });
+
+          return;
+        }
+
+        if (actions.isBulkRemoveAction(action)) {
+          removeBulkDocuments(db, knownIDs, action).then(next).catch(err => {
+            api.dispatch(
+              actions.modelError(err as Error, OPERATION_BULK_REMOVE)
+            );
           });
 
           return;
