@@ -16,6 +16,7 @@ import {
   removeBulkModels,
   RemoveModel,
   removeModel,
+  SyncModel,
   UpdateBulkModels,
   updateBulkModels,
   UpdateModel,
@@ -33,6 +34,7 @@ import {
   UPDATE_BULK_MODELS,
   UPDATE_MODEL,
 } from './constants';
+import { Action, createReducer, ReducerState } from './reducer';
 import { ReplicationWrapper } from './ReplicationWrapper';
 import { sync } from './sync';
 
@@ -81,4 +83,11 @@ export {
   removeModel,
 };
 
-export { MaybeModel, ReplicationWrapper };
+export {
+  Action,
+  createReducer,
+  ReducerState,
+  MaybeModel,
+  SyncModel,
+  ReplicationWrapper,
+};
