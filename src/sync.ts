@@ -114,16 +114,19 @@ export type ChangeCallback = (
   arg: PouchDB.Replication.SyncResult<actions.MaybeModel>
 ) => void;
 
+function updateModifiedAt(model: actions.SyncModel): actions.SyncModel {
+  const doc = model.toJSON !== undefined ? model.toJSON() : model;
+  doc.updateAt = new Date();
+
+  return doc;
+}
+
 const insertDocument = async (
   db: PouchDB.Database<actions.MaybeModel>,
   knownIDs: IDStorage,
   action: actions.InsertModel<actions.SyncModel>
 ) => {
-  await db.put(
-    action.payload.toJSON !== undefined
-      ? action.payload.toJSON()
-      : action.payload
-  );
+  await db.put(updateModifiedAt(action.payload));
 
   const doc = await db.get(action.payload._id);
   if (!actions.isModel(doc)) {
@@ -145,9 +148,7 @@ const insertBulkDocuments = async (
   knownIDs: IDStorage,
   action: actions.InsertBulkModels<actions.SyncModel>
 ) => {
-  const data = action.payload.map(
-    m => (m.toJSON !== undefined ? m.toJSON() as actions.SyncModel : m)
-  );
+  const data = action.payload.map(updateModifiedAt);
   await db.bulkDocs(data);
   const ids = data.map(d => {
     return { id: d._id, rev: '' };
@@ -175,11 +176,7 @@ const updateDocument = async (
   db: PouchDB.Database<actions.MaybeModel>,
   action: actions.UpdateModel<actions.SyncModel>
 ) => {
-  await db.put(
-    action.payload.toJSON !== undefined
-      ? action.payload.toJSON()
-      : action.payload
-  );
+  await db.put(updateModifiedAt(action.payload));
 
   const doc = await db.get(action.payload._id);
   if (!actions.isModel(doc)) {
@@ -195,9 +192,8 @@ const updateBulkDocuments = async (
   knownIDs: IDStorage,
   action: actions.UpdateBulkModels<actions.SyncModel>
 ) => {
-  const data = action.payload.map(
-    m => (m.toJSON !== undefined ? m.toJSON() as actions.SyncModel : m)
-  );
+  const data = action.payload.map(updateModifiedAt);
+
   await db.bulkDocs(data);
   const ids = data.map(d => {
     return { id: d._id, rev: '' };

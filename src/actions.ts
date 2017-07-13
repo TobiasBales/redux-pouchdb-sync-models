@@ -183,7 +183,7 @@ export interface SyncModel {
   modifiedAt: Date;
   // tslint:disable-next-line no-any
   [k: string]: any;
-  toJSON?(): Object;
+  toJSON?(): { [K in keyof SyncModel]: SyncModel[K] };
 }
 
 export interface SyncModelData {
