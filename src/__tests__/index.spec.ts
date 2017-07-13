@@ -14,7 +14,8 @@ const kind = 'kind';
 let db: PouchDB.Database;
 let remoteDb: PouchDB.Database;
 let store: MockStore<{}>;
-let models: { kind: string; _id: string; value: number }[];
+let models: sync.SyncModel[];
+const now = new Date();
 
 function lastAction() {
   const actions: Action[] = store.getActions();
@@ -24,9 +25,9 @@ function lastAction() {
 
 beforeEach(async done => {
   models = [
-    { kind: kind, _id: '1234', value: 1234 },
-    { kind: kind, _id: '2345', value: 2345 },
-    { kind: kind, _id: '3456', value: 3456 },
+    { kind: kind, _id: '1234', value: 1234, createdAt: now, modifiedAt: now },
+    { kind: kind, _id: '2345', value: 2345, createdAt: now, modifiedAt: now },
+    { kind: kind, _id: '3456', value: 3456, createdAt: now, modifiedAt: now },
   ];
   db = new PouchDB<sync.MaybeModel>('test', { adapter: 'memory' });
   remoteDb = new PouchDB<sync.MaybeModel>('test-remote', { adapter: 'memory' });
@@ -82,29 +83,47 @@ describe('initialization', () => {
 
 describe('inserting', () => {
   it('should handle an insert action', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.clearActions();
     store.dispatch(sync.insertModel(model));
 
     const doc = await db.get('0123');
-    expect(doc).toMatchObject(model);
+    expect(doc).toMatchObject({ _id: model._id, value: 123 });
     expect(store.getActions().length).toBe(0);
   });
 
   it('should handle duplicate an insert action', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.dispatch(sync.insertModel(model));
 
     const doc1 = await db.get('0123');
     store.dispatch(sync.insertModel({ ...model, ...doc1, value: 234 }));
     const doc2 = await db.get('0123');
-    expect(doc2).toMatchObject({ ...model, value: 234 });
+    expect(doc2).toMatchObject({ _id: model._id, value: 234 });
   });
 
   it('should handle an bulk insert action', async () => {
     const modelsToInsert = [
-      { kind: kind, _id: '0123', value: 123 },
-      { kind: kind, _id: '1234', value: 1234 },
+      { kind: kind, _id: '0123', value: 123, createdAt: now, modifiedAt: now },
+      {
+        kind: kind,
+        _id: '1234',
+        value: 1234,
+        createdAt: now,
+        modifiedAt: now,
+      },
     ];
     store.dispatch(sync.insertBulkModels(modelsToInsert, kind));
 
@@ -126,28 +145,40 @@ describe('inserting', () => {
 
 describe('updating', () => {
   it('should handle an insert and update action', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.dispatch(sync.insertModel(model));
 
     const doc1 = await db.get('0123');
     store.dispatch(sync.updateModel({ ...model, ...doc1, value: 234 }));
     const doc2 = await db.get('0123');
-    expect(doc2).toMatchObject({ ...model, value: 234 });
+    expect(doc2).toMatchObject({ _id: model._id, value: 234 });
   });
 
   it('should handle an update action without a previous insert', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.clearActions();
     store.dispatch(sync.updateModel(model));
     const doc = await db.get('0123');
-    expect(doc).toMatchObject(model);
+    expect(doc).toMatchObject({ _id: model._id, value: 123 });
     expect(store.getActions().length).toBe(0);
   });
 
   it('should handle an bulk update action', async () => {
     const modelsToInsert = [
-      { kind: kind, _id: '0123', value: 123 },
-      { kind: kind, _id: '1234', value: 1234 },
+      { kind: kind, _id: '0123', value: 123, createdAt: now, modifiedAt: now },
+      { kind: kind, _id: '1234', value: 1234, createdAt: now, modifiedAt: now },
     ];
     store.dispatch(sync.insertBulkModels(modelsToInsert, kind));
 
@@ -156,8 +187,8 @@ describe('updating', () => {
       const doc2 = await db.get('1234');
 
       const modelsToUpdate = [
-        { ...doc1, kind: kind, value: 321 },
-        { ...doc2, kind: kind, value: 4321 },
+        { ...doc1, kind: kind, value: 321, createdAt: now, modifiedAt: now },
+        { ...doc2, kind: kind, value: 4321, createdAt: now, modifiedAt: now },
       ];
       store.dispatch(sync.updateBulkModels(modelsToUpdate, kind));
     }
@@ -170,8 +201,8 @@ describe('updating', () => {
 
   it('should handle an bulk update action without previous insert', async () => {
     const modelsToUpdate = [
-      { kind: kind, _id: '0123', value: 123 },
-      { kind: kind, _id: '1234', value: 1234 },
+      { kind: kind, _id: '0123', value: 123, createdAt: now, modifiedAt: now },
+      { kind: kind, _id: '1234', value: 1234, createdAt: now, modifiedAt: now },
     ];
     store.dispatch(sync.updateBulkModels(modelsToUpdate, kind));
 
@@ -185,7 +216,13 @@ describe('updating', () => {
 
 describe('removing', () => {
   it('should handle an insert and remove action', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.dispatch(sync.insertModel(model));
 
     const doc1 = await db.get('0123', { revs: true });
@@ -207,7 +244,13 @@ describe('removing', () => {
   });
 
   it('should handle an remove action without a previous insert', async () => {
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     store.clearActions();
     store.dispatch(sync.removeModel({ _id: model._id, _rev: '' }, kind));
 
@@ -227,8 +270,8 @@ describe('removing', () => {
 
   it('should handle an bulk remove action', async () => {
     const modelsToInsert = [
-      { kind: kind, _id: '0123', value: 123 },
-      { kind: kind, _id: '1234', value: 1234 },
+      { kind: kind, _id: '0123', value: 123, createdAt: now, modifiedAt: now },
+      { kind: kind, _id: '1234', value: 1234, createdAt: now, modifiedAt: now },
     ];
     store.dispatch(sync.insertBulkModels(modelsToInsert, kind));
 
@@ -269,7 +312,13 @@ describe('removing', () => {
 describe('syncing', () => {
   it('should handle an insert in the remote database', async () => {
     store.clearActions();
-    const model = { kind: kind, _id: '0123', value: 123 };
+    const model = {
+      kind: kind,
+      _id: '0123',
+      value: 123,
+      createdAt: now,
+      modifiedAt: now,
+    };
     await remoteDb.put(model);
 
     await (db.sync(remoteDb) as Promise<void>);
