@@ -17,6 +17,8 @@ import {
   RemoveModel,
   removeModel,
   SyncModel,
+  SyncModelBase,
+  SyncModelData,
   UpdateBulkModels,
   updateBulkModels,
   UpdateModel,
@@ -89,5 +91,7 @@ export {
   ReducerState,
   MaybeModel,
   SyncModel,
+  SyncModelBase,
+  SyncModelData,
   ReplicationWrapper,
 };

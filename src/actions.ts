@@ -1,6 +1,7 @@
 import { Action } from 'redux';
 
 import * as constants from './constants';
+import { uuid } from './utils/uuid';
 
 export interface MaybeModel {
   kind?: string;
@@ -178,9 +179,39 @@ export interface SyncModel {
   kind: string;
   _id: string;
   _rev?: string;
+  createdAt: Date;
+  modifiedAt: Date;
   // tslint:disable-next-line no-any
   [k: string]: any;
   toJSON?(): Object;
+}
+
+export interface SyncModelData {
+  kind: string;
+  _id?: string;
+  _rev?: string;
+  createdAt?: Date;
+  modifiedAt?: Date;
+}
+
+/**
+ * SyncModelBase offers a basic implementation of setting/creating _id, createdAt and modifiedAt 
+ */
+export class SyncModelBase implements SyncModel {
+  public readonly kind: string;
+  public readonly _id: string;
+  public readonly _rev?: string;
+  public readonly createdAt: Date;
+  public modifiedAt: Date;
+
+  constructor(data: SyncModelData) {
+    this.kind = data.kind;
+    this._id = data._id !== undefined ? data._id : uuid();
+    this._rev = data._rev;
+    this.createdAt = data.createdAt !== undefined ? data.createdAt : new Date();
+    this.modifiedAt =
+      data.modifiedAt !== undefined ? data.modifiedAt : new Date();
+  }
 }
 
 export type DeletedDoc = PouchDB.Core.IdMeta &

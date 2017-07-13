@@ -2,16 +2,41 @@ import { Reducer } from 'redux';
 
 import * as sync from '../index';
 
+const now = new Date();
+
 const kind = 'kind';
 const otherKind = 'something';
-const otherModel: sync.SyncModel = { kind: otherKind, _id: 'nope' };
+const otherModel: sync.SyncModel = {
+  kind: otherKind,
+  _id: 'nope',
+  createdAt: now,
+  modifiedAt: now,
+};
 
 let emptyState: sync.ReducerState<sync.SyncModel>;
 let emptyAction: sync.Action<sync.SyncModel>;
 let state: sync.ReducerState<sync.SyncModel>;
-const model1: sync.SyncModel = { kind: kind, value: 1, _id: '1234' };
-const model2: sync.SyncModel = { kind: kind, value: 2, _id: '2345' };
-const model3: sync.SyncModel = { kind: kind, value: 3, _id: '3456' };
+const model1: sync.SyncModel = {
+  kind: kind,
+  value: 1,
+  _id: '1234',
+  createdAt: now,
+  modifiedAt: now,
+};
+const model2: sync.SyncModel = {
+  kind: kind,
+  value: 2,
+  _id: '2345',
+  createdAt: now,
+  modifiedAt: now,
+};
+const model3: sync.SyncModel = {
+  kind: kind,
+  value: 3,
+  _id: '3456',
+  createdAt: now,
+  modifiedAt: now,
+};
 const models = [model1, model2];
 let reducer: Reducer<sync.ReducerState<sync.SyncModel>>;
 
